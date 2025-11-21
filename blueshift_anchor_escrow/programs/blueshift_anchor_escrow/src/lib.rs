@@ -1,12 +1,17 @@
+#[allow(unexpected_cfgs)]
+#[allow(deprecated)]
 use anchor_lang::prelude::*;
+mod state;
+mod errors;
+mod instructions;
+use instructions::*;
 
-declare_id!("GsbqNT1jVac397qxsiG2G7Ezp1T54uV6x8Pc7UuA7XJe");
-
+declare_id!("22222222222222222222222222222222222222222222");
 #[program]
 pub mod blueshift_anchor_escrow {
     use super::*;
-
-    pub fn initialize(ctx: Context<Initialize>) -> Result<()> {
+    #[instruction(discriminator = 0)]
+    pub fn make(ctx: Context<Initialize>) -> Result<()> {
         msg!("Greetings from: {:?}", ctx.program_id);
         Ok(())
     }
