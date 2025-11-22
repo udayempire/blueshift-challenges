@@ -1,8 +1,12 @@
-#[allow(unexpected_cfgs)]
-#[allow(deprecated)]
-use anchor_lang::prelude::*;
+#![allow(deprecated)]
+#![allow(unexpected_cfgs)]
 use crate::{errors::EscrowError, state::Escrow};
-use anchor_spl::{Mint, associated_token::AssociatedToken, token::{TokenAccount, spl_token::instruction::transfer_checked, TransferChecked}};
+use anchor_lang::prelude::*;
+use anchor_spl::{
+    associated_token::AssociatedToken,
+    token::Mint,
+    token::{spl_token::instruction::transfer_checked, TokenAccount, TransferChecked},
+};
 
 #[derive(Accounts)]
 #[instruction(seed: u64)]
@@ -13,26 +17,26 @@ pub struct Make<'info> {
         init,
         payer = maker,
         space = Escrow::INIT_SPACE + Escrow::DISCRIMINATOR.len(),
-        seeds = [b"escrow",maker.key().as_ref(), seeds.to_le_bytes().as_ref()],
+        seeds = [b"escrow",maker.key().as_ref(), seed.to_le_bytes().as_ref()],
         bump
     )]
-    pub escrow: Account<'info,Escrow>,
+    pub escrow: Account<'info, Escrow>,
     //Token accounts
     #[account(
         mint::token_program = token_program
     )]
-    pub mint_a: InterfaceAccount<'info,Mint>,
+    pub mint_a: InterfaceAccount<'info, Mint>,
     #[account(
         mint::token_program = token_program
     )]
-    pub mint_b: InterfaceAccount<'info,Mint>,
+    pub mint_b: InterfaceAccount<'info, Mint>,
     #[account(
         mut,
         associated_token::mint = mint_a,
         associated_token::authority = escrow,
         associated_token::token_program = token_program
     )]
-    pub maker_ata_a: InterfaceAccount<'info,TokenAccount>,
+    pub maker_ata_a: InterfaceAccount<'info, TokenAccount>,
     #[account(
         init,
         payer = maker,
@@ -40,35 +44,36 @@ pub struct Make<'info> {
         associated_token::authority = escrow,
         associated_token::token_program = token_program
     )]
-    pub vault: InterfaceAccount<'info,TokenAccount>,
-    pub associated_token_program: Program<'info,AssociatedToken>,
-    pub token_program: Program<'info,TokenAccount>,
-    pub system_prorgam: Program<'info,System>,
+    pub vault: InterfaceAccount<'info, TokenAccount>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
+    pub token_program: Program<'info, TokenAccount>,
+    pub system_program: Program<'info, System>,
 }
 
-impl<'info> Make<'info>{
+impl<'info> Make<'info> {
     //initialze escrow
-    fn populate_escrow(&mut self, seed:u64, amount: u64, bump: u8)->Result<()>{
-        self.escrow.set_inner(Escrow { 
-            seed, 
-            maker: self.maker.key(), 
-            mint_a: self.mint_a.key(), 
-            mint_b: self.mint_b.key(), 
+    fn populate_escrow(&mut self, seed: u64, amount: u64, bump: u8) -> Result<()> {
+        self.escrow.set_inner(Escrow {
+            seed,
+            maker: self.maker.key(),
+            mint_a: self.mint_a.key(),
+            mint_b: self.mint_b.key(),
             recieve: amount,
-            bump
+            bump,
         });
         Ok(())
     }
     /// # Deposit the tokens
-    fn deposit_tokens(&self, amount: u64)-> Result<()>{
+    fn deposit_tokens(&self, amount: u64) -> Result<()> {
+        //why using transfer checked?
         transfer_checked(
             CpiContext::new(
                 self.token_program.to_account_info(),
-                TransferChecked{
+                TransferChecked {
                     from: self.maker_ata_a.to_account_info(),
                     mint: self.mint_a.to_account_info(),
                     to: self.vault.to_account_info(),
-                    authority: self.maker.to_account_info()
+                    authority: self.maker.to_account_info(),
                 },
             ),
             amount,
@@ -76,18 +81,16 @@ impl<'info> Make<'info>{
         )?;
         Ok(())
     }
-    // Depost token
-    //why using transfer checked?
-
 }
 
-pub fn handler(ctx: Context<Make>, seed: u64, recieve:u64, amount: u64)->Result<()>{
+pub fn handler(ctx: Context<Make>, seed: u64, recieve: u64, amount: u64) -> Result<()> {
     //validate the amount
-    require_gt!(recieve,0,EscrowError::InvalidAmount);
-    require_gt!(amount,0, EscrowError::InvalidAmount);
+    require_gt!(recieve, 0, EscrowError::InvalidAmount);
+    require_gt!(amount, 0, EscrowError::InvalidAmount);
     //save the escrow data
-    ctx.accounts.populate_escrow(seed, recieve, ctx.bumps.escrow);
+    ctx.accounts
+        .populate_escrow(seed, recieve, ctx.bumps.escrow);
     //deposit Tokens
-    ctx.accounts.deposit_tokens(amount)?;3
+    ctx.accounts.deposit_tokens(amount)?;
     Ok(())
 }

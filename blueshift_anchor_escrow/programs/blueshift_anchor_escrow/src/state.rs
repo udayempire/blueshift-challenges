@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-#[derive(Initspace)]
+#[derive(InitSpace)]
 #[account(discriminator =1)]
 pub struct Escrow{
     pub seed: u64,
