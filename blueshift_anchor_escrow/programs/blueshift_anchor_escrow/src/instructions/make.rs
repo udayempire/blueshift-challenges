@@ -20,23 +20,23 @@ pub struct Make<'info> {
         seeds = [b"escrow",maker.key().as_ref(), seed.to_le_bytes().as_ref()],
         bump
     )]
-    pub escrow: Account<'info, Escrow>,
+    pub escrow: Account<'info, Escrow>, //the account holding the exchange terms (maker, mints, amounts)
     //Token accounts
     #[account(
         mint::token_program = token_program
     )]
-    pub mint_a: InterfaceAccount<'info, Mint>,
+    pub mint_a: InterfaceAccount<'info, Mint>, // the token that the maker is depositing
     #[account(
         mint::token_program = token_program
     )]
-    pub mint_b: InterfaceAccount<'info, Mint>,
+    pub mint_b: InterfaceAccount<'info, Mint>,  //the token that the maker wants in exchange
     #[account(
         mut,
         associated_token::mint = mint_a,
         associated_token::authority = escrow,
         associated_token::token_program = token_program
     )]
-    pub maker_ata_a: InterfaceAccount<'info, TokenAccount>,
+    pub maker_ata_a: InterfaceAccount<'info, TokenAccount>, //the token account associated with the maker and mint_a used to deposit tokens in the vault
     #[account(
         init,
         payer = maker,
@@ -44,13 +44,13 @@ pub struct Make<'info> {
         associated_token::authority = escrow,
         associated_token::token_program = token_program
     )]
-    pub vault: InterfaceAccount<'info, TokenAccount>,
-    pub associated_token_program: Program<'info, AssociatedToken>,
-    pub token_program: Program<'info, TokenAccount>,
-    pub system_program: Program<'info, System>,
+    pub vault: InterfaceAccount<'info, TokenAccount>, //the token account associated with the escrow and mint_a where deposited tokens are parked
+    pub associated_token_program: Program<'info, AssociatedToken>, //the associated token program used to create the associated token accounts
+    pub token_program: Program<'info, TokenAccount>, //the token program used to CPI the transfer
+    pub system_program: Program<'info, System>, //the system program used to create the Escrow
 }
 
-impl<'info> Make<'info> {
+impl<'info>Make<'info> {
     //initialze escrow
     fn populate_escrow(&mut self, seed: u64, amount: u64, bump: u8) -> Result<()> {
         self.escrow.set_inner(Escrow {

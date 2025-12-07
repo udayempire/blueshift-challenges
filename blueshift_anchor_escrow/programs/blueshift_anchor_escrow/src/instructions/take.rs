@@ -45,7 +45,4 @@ pub struct Take<'info>{
         associated_token::token_program = token_program
     )]
     pub taker_at_a: Box<InterfaceAccount<'info,TokenAccount>>,
-    
-
-
 }
