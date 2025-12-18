@@ -1,11 +1,11 @@
 #![allow(deprecated)]
 #![allow(unexpected_cfgs)]
-use crate::{errors::EscrowError, state::Escrow};
 use anchor_lang::prelude::*;
+use crate::{errors::EscrowError, state::Escrow};
 use anchor_spl::{
     associated_token::AssociatedToken,
-    token::Mint,
-    token::{spl_token::instruction::transfer_checked, TokenAccount, TransferChecked},
+    token_interface::{Mint, TokenAccount},
+    token::{transfer_checked,TransferChecked,Token},
 };
 
 #[derive(Accounts)]
@@ -46,7 +46,7 @@ pub struct Make<'info> {
     )]
     pub vault: InterfaceAccount<'info, TokenAccount>, //the token account associated with the escrow and mint_a where deposited tokens are parked
     pub associated_token_program: Program<'info, AssociatedToken>, //the associated token program used to create the associated token accounts
-    pub token_program: Program<'info, TokenAccount>, //the token program used to CPI the transfer
+    pub token_program: Program<'info, Token>, //the token program used to CPI the transfer
     pub system_program: Program<'info, System>, //the system program used to create the Escrow
 }
 
@@ -59,7 +59,7 @@ impl<'info>Make<'info> {
             mint_a: self.mint_a.key(),
             mint_b: self.mint_b.key(),
             recieve: amount,
-            bump,
+            bump
         });
         Ok(())
     }

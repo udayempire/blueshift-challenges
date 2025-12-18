@@ -9,7 +9,6 @@ use anchor_spl::{
 };
 use crate::{errors::EscrowError,state::Escrow};
 #[derive(Accounts)]
-
 pub struct Take<'info>{
     //the user that accepts the terms of the maker and is making the exchange
     #[account(mut)]
