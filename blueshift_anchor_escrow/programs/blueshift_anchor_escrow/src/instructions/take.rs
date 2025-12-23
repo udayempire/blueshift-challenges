@@ -3,8 +3,7 @@
 
 use anchor_lang::prelude::*;
 use anchor_spl::{
-    token::Mint, 
-    token::TokenAccount,
+    associated_token::{self, AssociatedToken}, token::{Mint, Token, TokenAccount}
     // associated_token::AssociatedToken,
 };
 use crate::{state::Escrow};
@@ -23,11 +22,17 @@ pub struct Take<'info>{
         bump = escrow.bump,
         has_one = maker @ EscrowError::InvalidMaker, //he token that the maker has deposited
         has_one = mint_a @ EscrowError::InvalidMintA,
-        has_one = mint_b @ EscrowError::InvalidMintB
+        has_one = mint_b @ EscrowError::InvalidMintB,
     )]
     pub escrow: Box<Account<'info,Escrow>>,
     /// Token Accounts
+    #[account(
+        mint::token_program = token_program
+    )]
     pub mint_a: Box<InterfaceAccount<'info,Mint>>, //he token that the maker has deposited
+    #[account(
+        mint::token_program = token_program
+    )]
     pub mint_b: Box<InterfaceAccount<'info,Mint>>, //he token that the maker wants om exchange 
     #[account(
         mut,
@@ -43,6 +48,23 @@ pub struct Take<'info>{
         associated_token::authority = taker,
         associated_token::token_program = token_program
     )]
-    pub taker_ata_a: Box<InterfaceAccount<'info,TokenAccount>>,
-    pub taker_ata_b: Box<InterfaceAccount<'info,TokenAccount>>, //, 
+    pub taker_ata_a: Box<InterfaceAccount<'info,TokenAccount>>, //he token account associated with the taker and mint_a that will receive the tokens from the vault
+    #[account(
+        mut,
+        associated_token::mint = mint_b,
+        associated_token::authority = maker,
+        associated_token::token_program = token_program,
+    )]
+    pub taker_ata_b: Box<InterfaceAccount<'info,TokenAccount>>, // the token account associated with the taker and mint_b that will send the tokens to the maker
+    #[account(
+        init_if_needed,
+        payer = taker,
+        associated_token::mint = mint_b;
+        associated_token::authority = maker,
+        associated_token_program = token_program
+    )]
+    pub maker_ata_b: Program<'info,Token>, //the token account associated with the maker and mint_b that will receive the tokens to the taker
+    pub associated_token_program: Program<'info,AssociatedToken>, // to create token accounts if missing 
+    pub token_program: Program<'info,Token>,
+    pub system_program: Program<'info,System>, 
 }

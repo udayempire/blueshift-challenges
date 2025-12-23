@@ -20,7 +20,7 @@ pub struct Make<'info> {
         seeds = [b"escrow",maker.key().as_ref(), seed.to_le_bytes().as_ref()],
         bump
     )]
-    pub escrow: Account<'info, Escrow>, //the account holding the exchange terms (maker, mints, amounts)
+    pub escrow: Account<'info, Escrow>, //the pda account holding the exchange terms (maker, mints, amounts)
     //Token accounts
     #[account(
         mint::token_program = token_program
