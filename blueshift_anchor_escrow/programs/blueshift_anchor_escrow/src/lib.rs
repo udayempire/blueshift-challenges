@@ -11,7 +11,11 @@ declare_id!("22222222222222222222222222222222222222222222");
 pub mod blueshift_anchor_escrow {
     use super::*;
     #[instruction(discriminator = 0)]
-    pub fn make(ctx: Context<Initialize>) -> Result<()> {
+    pub fn make(ctx: Context<Make>) -> Result<()> {
+        msg!("Greetings from: {:?}", ctx.program_id);
+        Ok(())
+    }
+    pub fn take(ctx: Context<Take>) -> Result<()> {
         msg!("Greetings from: {:?}", ctx.program_id);
         Ok(())
     }

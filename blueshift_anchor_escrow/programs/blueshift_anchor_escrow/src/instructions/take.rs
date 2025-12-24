@@ -65,7 +65,7 @@ pub struct Take<'info> {
         associated_token::authority = maker,
         associated_token::token_program = token_program
     )]
-    pub maker_ata_b: Program<'info, Token>, //the token account associated with the maker and mint_b that will receive the tokens to the taker
+    pub maker_ata_b: InterfaceAccount<'info, TokenAccount>, //the token account associated with the maker and mint_b that will receive the tokens to the taker
     pub associated_token_program: Program<'info, AssociatedToken>, // to create token accounts if missing
     pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
