@@ -27,7 +27,7 @@ pub struct Take<'info> {
         has_one = mint_b @ EscrowError::InvalidMintB,
     )]
     pub escrow: Box<Account<'info, Escrow>>,
-    /// Token Accounts
+    /// Token Accounts  
     #[account(
         mint::token_program = token_program
     )]
@@ -69,7 +69,7 @@ pub struct Take<'info> {
     pub associated_token_program: Program<'info, AssociatedToken>, // to create token accounts if missing
     pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
-}
+}   
 
 impl<'info>Take<'info> {
     fn transfer_to_maker(&mut self) -> Result<()> {

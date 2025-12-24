@@ -19,6 +19,10 @@ pub mod blueshift_anchor_escrow {
         msg!("Greetings from: {:?}", ctx.program_id);
         Ok(())
     }
+    pub fn refund(ctx: Context<Take>) -> Result<()> {
+        msg!("Greetings from: {:?}", ctx.program_id);
+        Ok(())
+    }
 }
 
 #[derive(Accounts)]
