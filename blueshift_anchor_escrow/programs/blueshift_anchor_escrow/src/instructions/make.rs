@@ -33,7 +33,7 @@ pub struct Make<'info> {
     #[account(
         mut,
         associated_token::mint = mint_a,
-        associated_token::authority = escrow,
+        associated_token::authority = maker,
         associated_token::token_program = token_program
     )]
     pub maker_ata_a: InterfaceAccount<'info, TokenAccount>, //the token account associated with the maker and mint_a used to deposit tokens in the vault
@@ -58,7 +58,7 @@ impl<'info>Make<'info> {
             maker: self.maker.key(),
             mint_a: self.mint_a.key(),
             mint_b: self.mint_b.key(),
-            recieve: amount,
+            receive: amount,
             bump
         });
         Ok(())
@@ -83,13 +83,13 @@ impl<'info>Make<'info> {
     }
 }
 
-pub fn handler(ctx: Context<Make>, seed: u64, recieve: u64, amount: u64) -> Result<()> {
+pub fn handler(ctx: Context<Make>, seed: u64, receive: u64, amount: u64) -> Result<()> {
     //validate the amount
-    require_gt!(recieve, 0, EscrowError::InvalidAmount);
+    require_gt!(receive, 0, EscrowError::InvalidAmount);
     require_gt!(amount, 0, EscrowError::InvalidAmount);
     //save the escrow data
     ctx.accounts
-        .populate_escrow(seed, recieve, ctx.bumps.escrow);
+        .populate_escrow(seed, receive, ctx.bumps.escrow);
     //deposit Tokens
     ctx.accounts.deposit_tokens(amount)?;
     Ok(())

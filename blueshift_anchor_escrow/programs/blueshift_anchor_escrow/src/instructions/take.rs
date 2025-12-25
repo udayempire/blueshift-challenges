@@ -46,15 +46,16 @@ pub struct Take<'info> {
     #[account(
         init_if_needed,
         payer = taker,
-        associated_token::mint =mint_b,
+        associated_token::mint =mint_a,
         associated_token::authority = taker,
         associated_token::token_program = token_program
     )]
     pub taker_ata_a: Box<InterfaceAccount<'info, TokenAccount>>, //he token account associated with the taker and mint_a that will receive the tokens from the vault
     #[account(
-        mut,
+        init_if_needed,
+        payer= taker,
         associated_token::mint = mint_b,
-        associated_token::authority = maker,
+        associated_token::authority = taker,
         associated_token::token_program = token_program,
     )]
     pub taker_ata_b: Box<InterfaceAccount<'info, TokenAccount>>, // the token account associated with the taker and mint_b that will send the tokens to the maker
@@ -83,7 +84,7 @@ impl<'info>Take<'info> {
                     authority: self.taker.to_account_info(),
                 },
             ),
-            self.escrow.recieve,
+            self.escrow.receive,
             self.mint_b.decimals,
         )?;
         Ok(())
