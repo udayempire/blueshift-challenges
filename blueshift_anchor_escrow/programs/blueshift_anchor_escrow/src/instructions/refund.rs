@@ -100,6 +100,6 @@ impl<'info>Refund<'info>{
 
 pub fn handler(ctx: Context<Refund>)->Result<()>{
     ctx.accounts.withdraw_and_close_vault()?;
-    ctx.accounts.withdraw_rent_and_close_escrow();
+    ctx.accounts.withdraw_rent_and_close_escrow()?;
     Ok(())
 }

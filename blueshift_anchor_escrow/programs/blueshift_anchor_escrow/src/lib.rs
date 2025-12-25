@@ -11,17 +11,14 @@ declare_id!("22222222222222222222222222222222222222222222");
 pub mod blueshift_anchor_escrow {
     use super::*;
     #[instruction(discriminator = 0)]
-    pub fn make(ctx: Context<Make>) -> Result<()> {
-        msg!("Greetings from: {:?}", ctx.program_id);
-        Ok(())
+    pub fn make(ctx: Context<Make>,seed: u64, recieve: u64, amount: u64) -> Result<()> {
+        instructions::make::handler(ctx, seed, recieve, amount)
     }
     pub fn take(ctx: Context<Take>) -> Result<()> {
-        msg!("Greetings from: {:?}", ctx.program_id);
-        Ok(())
+        instructions::take::handler(ctx)
     }
     pub fn refund(ctx: Context<Refund>) -> Result<()> {
-        msg!("Greetings from: {:?}", ctx.program_id);
-        Ok(())
+        instructions::refund::handler(ctx)
     }
 }
 
