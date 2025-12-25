@@ -4,7 +4,7 @@ use anchor_lang::prelude::*;
 use crate::{errors::EscrowError, state::Escrow};
 use anchor_spl::{
     associated_token::AssociatedToken, 
-    token::{CloseAccount, Token, TransferChecked, close_account, transfer, transfer_checked}, 
+    token::{CloseAccount, Token, TransferChecked, close_account,transfer_checked}, 
     token_interface::{Mint, TokenAccount}
 };
 #[derive(Accounts)]
@@ -20,19 +20,17 @@ pub struct Refund<'info> {
         has_one= mint_a @ EscrowError::InvalidMintA
     )]
     pub escrow: Box<Account<'info,Escrow>>,
-    pub vault: Box<InterfaceAccount<'info,TokenAccount>;
+    #[account(
+        mut,
+        associated_token::mint = mint_a,
+        associated_token::authority = escrow,
+        associated_token::token_program = token_program
+    )]
+    pub vault: Box<InterfaceAccount<'info,TokenAccount>>,
     #[account(
         mint::token_program = token_program
     )]
     pub mint_a: Box<InterfaceAccount<'info,Mint>>,
-    #[account(
-        init_if_needed,
-        payer = maker,
-        associated_token::mint = mint_a,
-        associated_token::authority = escrow,
-        associated_token::token_program = token_program,
-    )]
-    pub associated_token_program: Program<'info,AssociatedToken>,
     #[account(
         mut,
         associated_token::mint = mint_a,
@@ -40,16 +38,17 @@ pub struct Refund<'info> {
         associated_token::token_program = token_program
     )]
     pub maker_ata_a: InterfaceAccount<'info,TokenAccount>,
+    pub associated_token_program: Program<'info,AssociatedToken>,
     pub token_program: Program<'info,Token>,
     pub system_program: Program<'info,System>
 }
 
 impl<'info>Refund<'info>{
     fn withdraw_rent_and_close_escrow(&mut self)->Result<()>{
-        let signer_seeds    = [&[
+        let signer_seeds: [&[&[u8]]; 1] = [&[
             b"escrow",
-            self.maker.to_account_info().key().as_ref(),
-            &self.escrow.to_account_info().seed.to_le_bytes()[..],
+            self.maker.to_account_info().key.as_ref(),
+            &self.escrow.seed.to_le_bytes()[..],
             &[self.escrow.bump]
         ]];
         close_account(
@@ -65,10 +64,10 @@ impl<'info>Refund<'info>{
         Ok(())
     }
     fn withdraw_and_close_vault(&mut self)-> Result<()>{
-        let signer_seeds    = [&[
+        let signer_seeds: [&[&[u8]]; 1] = [&[
             b"escrow",
-            self.maker.to_account_info().key().as_ref(),
-            &self.escrow.to_account_info().seed.to_le_bytes()[..],
+            self.maker.to_account_info().key.as_ref(),
+            &self.escrow.seed.to_le_bytes()[..],
             &[self.escrow.bump]
         ]];
         transfer_checked(
@@ -102,5 +101,5 @@ impl<'info>Refund<'info>{
 pub fn handler(ctx: Context<Refund>)->Result<()>{
     ctx.accounts.withdraw_and_close_vault()?;
     ctx.accounts.withdraw_rent_and_close_escrow();
-    Ok(()); 
+    Ok(())
 }

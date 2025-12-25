@@ -15,7 +15,7 @@ pub struct Take<'info> {
     #[account(mut)]
     pub taker: Signer<'info>,
     // the user that initially set the terms
-    #[account(mut)]
+    #[account(mut)] 
     pub maker: SystemAccount<'info>,
     #[account(
         mut,
@@ -29,7 +29,7 @@ pub struct Take<'info> {
     pub escrow: Box<Account<'info, Escrow>>,
     /// Token Accounts  
     #[account(
-        mint::token_program = token_program
+            mint::token_program = token_program
     )]
     pub mint_a: Box<InterfaceAccount<'info, Mint>>, //he token that the maker has deposited
     #[account(
