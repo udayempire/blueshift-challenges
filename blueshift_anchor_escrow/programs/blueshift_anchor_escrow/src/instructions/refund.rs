@@ -21,18 +21,19 @@ pub struct Refund<'info> {
     )]
     pub escrow: Box<Account<'info,Escrow>>,
     #[account(
-        mut,
+        mint::token_program = token_program
+    )]
+    pub mint_a: Box<InterfaceAccount<'info,Mint>>,
+    #[account(
+        mut,    
         associated_token::mint = mint_a,
         associated_token::authority = escrow,
         associated_token::token_program = token_program
     )]
     pub vault: Box<InterfaceAccount<'info,TokenAccount>>,
     #[account(
-        mint::token_program = token_program
-    )]
-    pub mint_a: Box<InterfaceAccount<'info,Mint>>,
-    #[account(
-        mut,
+        init_if_needed,
+        payer = maker,
         associated_token::mint = mint_a,
         associated_token::authority = maker,
         associated_token::token_program = token_program
@@ -51,16 +52,16 @@ impl<'info>Refund<'info>{
             &self.escrow.seed.to_le_bytes()[..],
             &[self.escrow.bump]
         ]];
-        close_account(
-            CpiContext::new_with_signer(
-            self.token_program.to_account_info(), 
-            CloseAccount{
-                account: self.escrow.to_account_info(),
-                authority: self.escrow.to_account_info(),
-                destination: self.maker.to_account_info()
-            },
-            &signer_seeds,
-            ))?;
+        // close_account(
+        //     CpiContext::new_with_signer(
+        //     self.token_program.to_account_info(), 
+        //     CloseAccount{
+        //         account: self.escrow.to_account_info(),
+        //         authority: self.escrow.to_account_info(),
+        //         destination: self.maker.to_account_info()
+        //     },
+        //     &signer_seeds,
+        //     ))?;
         Ok(())
     }
     fn withdraw_and_close_vault(&mut self)-> Result<()>{
