@@ -13,7 +13,7 @@ pub struct Refund<'info> {
     pub maker: Signer<'info>,       
     #[account(
         mut,
-        close = maker,
+        close = maker, // closes escrow and return rent maker
         seeds= [b"escrow",maker.key().as_ref(),escrow.seed.to_le_bytes().as_ref()],
         bump= escrow.bump,
         has_one= maker @ EscrowError::InvalidMaker,
@@ -45,25 +45,6 @@ pub struct Refund<'info> {
 }
 
 impl<'info>Refund<'info>{
-    fn withdraw_rent_and_close_escrow(&mut self)->Result<()>{
-        let signer_seeds: [&[&[u8]]; 1] = [&[
-            b"escrow",
-            self.maker.to_account_info().key.as_ref(),
-            &self.escrow.seed.to_le_bytes()[..],
-            &[self.escrow.bump]
-        ]];
-        // close_account(
-        //     CpiContext::new_with_signer(
-        //     self.token_program.to_account_info(), 
-        //     CloseAccount{
-        //         account: self.escrow.to_account_info(),
-        //         authority: self.escrow.to_account_info(),
-        //         destination: self.maker.to_account_info()
-        //     },
-        //     &signer_seeds,
-        //     ))?;
-        Ok(())
-    }
     fn withdraw_and_close_vault(&mut self)-> Result<()>{
         let signer_seeds: [&[&[u8]]; 1] = [&[
             b"escrow",
@@ -71,6 +52,7 @@ impl<'info>Refund<'info>{
             &self.escrow.seed.to_le_bytes()[..],
             &[self.escrow.bump]
         ]];
+        // 1. Transfer all tokens out first
         transfer_checked(
             CpiContext::new_with_signer(
                 self.token_program.to_account_info(), 
@@ -84,7 +66,7 @@ impl<'info>Refund<'info>{
             self.vault.amount, 
             self.mint_a.decimals
             )?;
-        //closes the vault
+        //closes the vault via token program
         close_account(
             CpiContext::new_with_signer(
                 self.token_program.to_account_info(),
@@ -101,6 +83,5 @@ impl<'info>Refund<'info>{
 
 pub fn handler(ctx: Context<Refund>)->Result<()>{
     ctx.accounts.withdraw_and_close_vault()?;
-    ctx.accounts.withdraw_rent_and_close_escrow()?;
     Ok(())
 }
