@@ -1,12 +1,16 @@
+#[allow(unexpected_cfgs)]
+#[allow(deprecated)]
 use anchor_lang::prelude::*;
-
-declare_id!("DvCsjZSHKkzRyVgMDbXWGiE2AWDx1J2LQRs1KoeaNRgY");
+declare_id!("22222222222222222222222222222222222222222222");
+mod states;
+mod instructions;
+use instructions::*;
 
 #[program]
 pub mod blueshift_anchor_flash_loan {
     use super::*;
-
-    pub fn initialize(ctx: Context<Initialize>) -> Result<()> {
+    #[instruction(discriminator = 0)]
+    pub fn borrow(ctx: Context<Borrow>) -> Result<()> {
         msg!("Greetings from: {:?}", ctx.program_id);
         Ok(())
     }
