@@ -1,7 +1,12 @@
 #![allow(deprecated)]
 #![allow(unexpected_cfgs)]
-use crate::states::LoanState;
-use anchor_lang::prelude::*;
+use crate::{errors::ProtocolError, states::LoanState, ID};
+use anchor_lang::{
+    prelude::*,
+    solana_program::sysvar::instructions::{
+        load_current_index_checked, load_instruction_at_checked,
+    },
+};
 use anchor_spl::{
     associated_token::AssociatedToken,
     token::{Mint, TokenAccount, Transfer},
@@ -68,6 +73,48 @@ impl<'info> Loan<'info> {
             ),
             borrow_amount,
         );
+        //Instruction Introspection is the primary means by which we secure our program
+        let ixs = self.instructions.to_account_info();
+        //checking the position of this instruction making sure its 1st
+        let current_index = load_current_index_checked(&self.instructions)?;
+        require_eq!(current_index, 0, ProtocolError::InvalidIx);
+        //check the number of instruction in this transaction
+        let instruction_sysvar = ixs.try_borrow_data()?;
+        let len = u16::from_le_bytes(instruction_sysvar[0..2].try_into().unwrap());
+        //ensure repay instruction exist
+        if let Ok(repay_ix) = load_instruction_at_checked(len as usize - 1, &ixs) {
+            //Instruction checks
+            require_keys_eq!(repay_ix.program_id, ID, ProtocolError::InvalidProgram);
+            require!(
+                repay_ix.data[0..8].eq(instruction::Repay::DISCRIMINATOR),
+                ProtocolError::InvalidIx
+            );
+            require_keys_eq!(
+                repay_ix
+                    .accounts
+                    .get(3)
+                    .ok_or(ProtocolError::InvalidBorrowerAta)?
+                    .pubkey,
+                self.borrower_ata.key(),
+                ProtocolError::InvalidBorrowerAta
+            );
+            require_keys_eq!(
+                repay_ix
+                    .accounts
+                    .get(4)
+                    .ok_or(ProtocolError::InvalidProtocolAta)?
+                    .pubkey,
+                self.protocol_ata.key(),
+                ProtocolError::InvalidProtocolAta
+            );
+        }else{
+            return Err(ProtocolError::MissingRepayIx.into())
+        }
         Ok(())
     }
+}
+
+pub fn handler(ctx: Context<Loan>,borrow_amount:u64)->Result<()>{
+    ctx.accounts.transfer_from_protocol(borrow_amount, ctx.bumps.protocol)?;
+    Ok(())
 }
