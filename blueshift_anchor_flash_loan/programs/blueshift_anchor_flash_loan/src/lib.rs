@@ -11,8 +11,8 @@ use instructions::*;
 pub mod blueshift_anchor_flash_loan {
     use super::*;
     #[instruction(discriminator = 0)]
-    pub fn borrow(ctx: Context<Borrow>) -> Result<()> {
-        instructions::loan::handler(ctx,borrow_amount)
+    pub fn borrow(ctx: Context<Borrow>,borrow_amount:u64) -> Result<()> {
+        instructions::borrow::handler(ctx,borrow_amount)
     }
     pub fn repay(ctx: Context<Repay>)-> Result<()>{
         instructions::repay::handler(ctx)

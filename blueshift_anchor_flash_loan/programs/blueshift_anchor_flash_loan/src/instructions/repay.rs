@@ -3,7 +3,7 @@
 use anchor_lang::{prelude::*, solana_program::sysvar::instructions::{load_instruction_at_checked}};
 use anchor_spl::{
     associated_token::AssociatedToken,
-    token::{Mint, TokenAccount, Transfer}
+    token::{Mint, TokenAccount,Token, Transfer,transfer}
 };
 
 use crate::errors::ProtocolError;
@@ -55,7 +55,7 @@ impl <'info>Repay<'info>{
         if let Ok(borrow_ixs)= load_instruction_at_checked(0,&ixs){
             //check amount borrowed
             let mut borrowed_data: [u8;8] = [0u8;8];
-            borrowed_data.copy_from_slice(&borrow_ix.data[8..16]);
+            borrowed_data.copy_from_slice(&borrow_ixs.data[8..16]);
             amount_borrowed = u64::from_le_bytes(borrowed_data);
         }else{
             return Err(ProtocolError::MissingBorrowIx.into());
@@ -76,4 +76,9 @@ impl <'info>Repay<'info>{
         )?;
         Ok(())
     }
+}
+
+pub fn handler(ctx:Context<Repay>)->Result<()>{
+    ctx.accounts.refund_to_protocol()?;
+    Ok(())
 }

@@ -5,16 +5,18 @@ use anchor_lang::{
     prelude::*,
     solana_program::sysvar::instructions::{
         load_current_index_checked, load_instruction_at_checked,
+        ID as INSTRUCTIONS_SYSVAR_ID
     },
 };
 use anchor_spl::{
     associated_token::AssociatedToken,
-    token::{Mint, TokenAccount, Transfer,Token},
+    token::{Mint, TokenAccount, Transfer,Token,transfer},
 };
+use crate::instruction::Repay;
 
 #[derive(Accounts)]
 #[instruction(seed: u64)]
-pub struct Loan<'info> {
+pub struct Borrow<'info> {
     #[account(mut)]
     pub borrower: Signer<'info>, // the user requesting the flash loan.
     #[account(
@@ -54,7 +56,7 @@ pub struct Loan<'info> {
     pub system_program: Program<'info, System>,
 }
 
-impl<'info> Loan<'info> {
+impl<'info>Borrow<'info> {
     fn transfer_from_protocol(&mut self, borrow_amount: u64, bump: u8) -> Result<()> {
         // Making sure we are not sending invalid amount
         require!(borrow_amount > 0, ProtocolError::InvalidAmount);
@@ -89,7 +91,7 @@ impl<'info> Loan<'info> {
             //Instruction checks
             require_keys_eq!(repay_ix.program_id, ID, ProtocolError::InvalidProgram);
             require!(
-                repay_ix.data[0..8].eq(instruction::Repay::DISCRIMINATOR),
+                repay_ix.data[0..8].eq(Repay::DISCRIMINATOR),
                 ProtocolError::InvalidIx
             );
             require_keys_eq!(
@@ -117,7 +119,7 @@ impl<'info> Loan<'info> {
     }
 }
 
-pub fn handler(ctx: Context<Loan>,borrow_amount:u64)->Result<()>{
+pub fn handler(ctx: Context<Borrow>,borrow_amount:u64)->Result<()>{
     ctx.accounts.transfer_from_protocol(borrow_amount, ctx.bumps.protocol)?;
     Ok(())
 }
