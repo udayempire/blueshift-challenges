@@ -1,6 +1,6 @@
 #![allow(deprecated)]
 #![allow(unexpected_cfgs)]
-use anchor_lang::{prelude::*, solana_program::sysvar::instructions::{load_current_index_checked, load_instruction_at_checked}};
+use anchor_lang::{prelude::*, solana_program::sysvar::instructions::{load_instruction_at_checked}};
 use anchor_spl::{
     associated_token::AssociatedToken,
     token::{Mint, TokenAccount, Transfer}
@@ -54,7 +54,7 @@ impl <'info>Repay<'info>{
         let mut amount_borrowed: u64;
         if let Ok(borrow_ixs)= load_instruction_at_checked(0,&ixs){
             //check amount borrowed
-            let mut borrowed_data: [u8,8] = [0u8;8];
+            let mut borrowed_data: [u8;8] = [0u8;8];
             borrowed_data.copy_from_slice(&borrow_ix.data[8..16]);
             amount_borrowed = u64::from_le_bytes(borrowed_data);
         }else{
