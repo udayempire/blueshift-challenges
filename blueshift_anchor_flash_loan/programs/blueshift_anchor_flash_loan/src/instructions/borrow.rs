@@ -1,6 +1,6 @@
 #![allow(deprecated)]
 #![allow(unexpected_cfgs)]
-use crate::{errors::ProtocolError, states::LoanState, ID};
+use crate::{errors::ProtocolError,ID};
 use anchor_lang::{
     prelude::*,
     solana_program::sysvar::instructions::{
@@ -9,7 +9,7 @@ use anchor_lang::{
 };
 use anchor_spl::{
     associated_token::AssociatedToken,
-    token::{Mint, TokenAccount, Transfer},
+    token::{Mint, TokenAccount, Transfer,Token},
 };
 
 #[derive(Accounts)]
@@ -18,13 +18,13 @@ pub struct Loan<'info> {
     #[account(mut)]
     pub borrower: Signer<'info>, // the user requesting the flash loan.
     #[account(
-        init,
-        payer = borrower,
-        space= LoanState::INIT_SPACE + LoanState::DISCRIMINATOR.len(),
         seeds= [b"protocol"],
         bump
     )]
-    pub protocol: Account<'info, LoanState>, //PDA that owns the protocol's liquidity pool.
+    /*we use system account because we want protcol to only signning authority and not to hold data so we dont need any SPACE.
+    Also saves a init program for protocol as its derived on-the-fly each time.
+    */
+    pub protocol: SystemAccount<'info>, //PDA that owns the protocol's liquidity pool.
     #[account(
         mint::token_program = token_program
     )]
@@ -39,7 +39,7 @@ pub struct Loan<'info> {
     pub borrower_ata: Account<'info, TokenAccount>,
     #[account(
         mut,
-        associated_token::mint = mint_a,
+        associated_token::mint = mint,
         associated_token::authority = protocol,
         associated_token::token_program = token_program
     )]
@@ -48,7 +48,7 @@ pub struct Loan<'info> {
         address = INSTRUCTIONS_SYSVAR_ID
     )]
     // CHECK: InstructionsSysvar account
-    instructions: UncheckedAccount<'info>,
+    instructions: UncheckedAccount<'info>, //contains all instructions in this transaction
     pub associated_token_program: Program<'info, AssociatedToken>,
     pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
@@ -59,7 +59,7 @@ impl<'info> Loan<'info> {
         // Making sure we are not sending invalid amount
         require!(borrow_amount > 0, ProtocolError::InvalidAmount);
         // derive signer seeds for protocol amount
-        let signer_seeds: &[&[&[u8]]] = &[&[b"protocol".as_ref(), &[self.protocol.bump]]];
+        let signer_seeds: &[&[&[u8]]] = &[&[b"protocol".as_ref(), &[bump]]];
         //transfer funds from protocol to borrower
         transfer(
             CpiContext::new_with_signer(
@@ -72,16 +72,19 @@ impl<'info> Loan<'info> {
                 signer_seeds,
             ),
             borrow_amount,
-        );
+        )?;
         //Instruction Introspection is the primary means by which we secure our program
         let ixs = self.instructions.to_account_info();
         //checking the position of this instruction making sure its 1st
         let current_index = load_current_index_checked(&self.instructions)?;
+        //The borrow must be instruction #0,so borrower can't do anything sneaky before borrowing.
         require_eq!(current_index, 0, ProtocolError::InvalidIx);
         //check the number of instruction in this transaction
         let instruction_sysvar = ixs.try_borrow_data()?;
         let len = u16::from_le_bytes(instruction_sysvar[0..2].try_into().unwrap());
         //ensure repay instruction exist
+        //Solana helper function that reads an instruction from the Instructions Sysvar.(load_instruction_at_checked)
+        //Returns a struct with: program_id, accounts, and data.
         if let Ok(repay_ix) = load_instruction_at_checked(len as usize - 1, &ixs) {
             //Instruction checks
             require_keys_eq!(repay_ix.program_id, ID, ProtocolError::InvalidProgram);
