@@ -15,7 +15,6 @@ use anchor_spl::{
 use crate::instruction::Repay;
 
 #[derive(Accounts)]
-#[instruction(seed: u64)]
 pub struct Borrow<'info> {
     #[account(mut)]
     pub borrower: Signer<'info>, // the user requesting the flash loan.
@@ -27,9 +26,7 @@ pub struct Borrow<'info> {
     Also saves a init program for protocol as its derived on-the-fly each time.
     */
     pub protocol: SystemAccount<'info>, //PDA that owns the protocol's liquidity pool.
-    #[account(
-        mint::token_program = token_program
-    )]
+    #[account()]
     pub mint: Account<'info, Mint>, //the specific token being borrowed
     #[account(
         init_if_needed,
@@ -46,13 +43,11 @@ pub struct Borrow<'info> {
         associated_token::token_program = token_program
     )]
     pub protocol_ata: Account<'info, TokenAccount>,
-    #[account(
-        address = INSTRUCTIONS_SYSVAR_ID
-    )]
-    // CHECK: InstructionsSysvar account
-    instructions: UncheckedAccount<'info>, //contains all instructions in this transaction
-    pub associated_token_program: Program<'info, AssociatedToken>,
+    /// CHECK: Instructions sysvar account - validated by address constraint
+    #[account(address = INSTRUCTIONS_SYSVAR_ID)]
+    pub instructions: UncheckedAccount<'info>,
     pub token_program: Program<'info, Token>,
+    pub associated_token_program: Program<'info, AssociatedToken>,
     pub system_program: Program<'info, System>,
 }
 

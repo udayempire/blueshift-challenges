@@ -22,10 +22,8 @@ pub struct Repay<'info>{
         bump
     )]
     pub protocol: SystemAccount<'info>,
-    #[account(
-        mint::token_program= token_program
-    )]
-    pub mint: Account<'info,Mint>, 
+    #[account()]
+    pub mint: Account<'info, Mint>, 
     #[account(
         mut,
         associated_token::mint = mint,
@@ -40,11 +38,11 @@ pub struct Repay<'info>{
         associated_token::token_program = token_program
     )]
     pub protocol_ata: Account<'info,TokenAccount>,
-    //Instruction sysvar for introspection
+    /// CHECK: Instructions sysvar account - validated by address constraint
     #[account(address = anchor_lang::solana_program::sysvar::instructions::ID)]
     pub instructions: UncheckedAccount<'info>,
-    pub associated_token_program: Program<'info,AssociatedToken>,
     pub token_program: Program<'info,Token>,
+    pub associated_token_program: Program<'info,AssociatedToken>,
     pub system_program: Program<'info,System>
 }
 
