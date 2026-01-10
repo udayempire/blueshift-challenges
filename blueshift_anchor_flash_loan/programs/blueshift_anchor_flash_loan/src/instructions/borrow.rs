@@ -1,18 +1,17 @@
 #![allow(deprecated)]
 #![allow(unexpected_cfgs)]
-use crate::{errors::ProtocolError,ID};
+use crate::instruction::Repay;
+use crate::{errors::ProtocolError, ID};
 use anchor_lang::{
     prelude::*,
     solana_program::sysvar::instructions::{
-        load_current_index_checked, load_instruction_at_checked,
-        ID as INSTRUCTIONS_SYSVAR_ID
+        load_current_index_checked, load_instruction_at_checked, ID as INSTRUCTIONS_SYSVAR_ID,
     },
 };
 use anchor_spl::{
     associated_token::AssociatedToken,
-    token::{Mint, TokenAccount, Transfer,Token,transfer},
+    token::{transfer, Mint, Token, TokenAccount, Transfer},
 };
-use crate::instruction::Repay;
 
 #[derive(Accounts)]
 pub struct Borrow<'info> {
@@ -51,7 +50,7 @@ pub struct Borrow<'info> {
     pub system_program: Program<'info, System>,
 }
 
-impl<'info>Borrow<'info> {
+impl<'info> Borrow<'info> {
     fn transfer_from_protocol(&mut self, borrow_amount: u64, bump: u8) -> Result<()> {
         // Making sure we are not sending invalid amount
         require!(borrow_amount > 0, ProtocolError::InvalidAmount);
@@ -107,14 +106,15 @@ impl<'info>Borrow<'info> {
                 self.protocol_ata.key(),
                 ProtocolError::InvalidProtocolAta
             );
-        }else{
-            return Err(ProtocolError::MissingRepayIx.into())
+        } else {
+            return Err(ProtocolError::MissingRepayIx.into());
         }
         Ok(())
     }
 }
 
-pub fn handler(ctx: Context<Borrow>,borrow_amount:u64)->Result<()>{
-    ctx.accounts.transfer_from_protocol(borrow_amount, ctx.bumps.protocol)?;
+pub fn handler(ctx: Context<Borrow>, borrow_amount: u64) -> Result<()> {
+    ctx.accounts
+        .transfer_from_protocol(borrow_amount, ctx.bumps.protocol)?;
     Ok(())
 }
