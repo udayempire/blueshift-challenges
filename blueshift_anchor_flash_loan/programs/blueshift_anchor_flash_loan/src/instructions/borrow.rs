@@ -27,6 +27,7 @@ pub struct Borrow<'info> {
     pub protocol: SystemAccount<'info>, //PDA that owns the protocol's liquidity pool.
     #[account()]
     pub mint: Account<'info, Mint>, //the specific token being borrowed
+    ///3 (line 97)
     #[account(
         init_if_needed,
         payer = borrower,
@@ -35,6 +36,7 @@ pub struct Borrow<'info> {
         associated_token::token_program = token_program
     )]
     pub borrower_ata: Account<'info, TokenAccount>,
+    ///4
     #[account(
         mut,
         associated_token::mint = mint,
@@ -52,23 +54,6 @@ pub struct Borrow<'info> {
 
 impl<'info> Borrow<'info> {
     fn transfer_from_protocol(&mut self, borrow_amount: u64, bump: u8) -> Result<()> {
-        // Making sure we are not sending invalid amount
-        require!(borrow_amount > 0, ProtocolError::InvalidAmount);
-        // derive signer seeds for protocol amount
-        let signer_seeds: &[&[&[u8]]] = &[&[b"protocol".as_ref(), &[bump]]];
-        //transfer funds from protocol to borrower
-        transfer(
-            CpiContext::new_with_signer(
-                self.token_program.to_account_info(),
-                Transfer {
-                    from: self.protocol_ata.to_account_info(),
-                    to: self.borrower_ata.to_account_info(),
-                    authority: self.protocol.to_account_info(),
-                },
-                signer_seeds,
-            ),
-            borrow_amount,
-        )?;
         //Instruction Introspection is the primary means by which we secure our program
         let ixs = self.instructions.to_account_info();
         //checking the position of this instruction making sure its 1st
@@ -77,6 +62,7 @@ impl<'info> Borrow<'info> {
         require_eq!(current_index, 0, ProtocolError::InvalidIx);
         //check the number of instruction in this transaction
         let instruction_sysvar = ixs.try_borrow_data()?;
+        // 0-2 because first 2 elements of array contains the number of instruction (2,0)(means 2 instruction ) 2 bytes
         let len = u16::from_le_bytes(instruction_sysvar[0..2].try_into().unwrap());
         //ensure repay instruction exist
         //Solana helper function that reads an instruction from the Instructions Sysvar.(load_instruction_at_checked)
@@ -109,6 +95,25 @@ impl<'info> Borrow<'info> {
         } else {
             return Err(ProtocolError::MissingRepayIx.into());
         }
+        // Making sure we are not sending invalid amount
+        require!(borrow_amount > 0, ProtocolError::InvalidAmount);
+        // all check done
+        // derive signer seeds for protocol amount
+        let signer_seeds: &[&[&[u8]]] = &[&[b"protocol".as_ref(), &[bump]]];
+        //transfer funds from protocol to borrower
+        transfer(
+            CpiContext::new_with_signer(
+                self.token_program.to_account_info(),
+                Transfer {
+                    from: self.protocol_ata.to_account_info(),
+                    to: self.borrower_ata.to_account_info(),
+                    authority: self.protocol.to_account_info(),
+                },
+                signer_seeds,
+            ),
+            borrow_amount,
+        )?;
+
         Ok(())
     }
 }
